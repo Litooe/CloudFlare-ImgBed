@@ -130,6 +130,24 @@ async function processFileUpload(context, formdata = null) {
     // 将指定的渠道名称存入 context，供后续上传函数使用
     context.specifiedChannelName = urlParamChannelName || null;
 
+    // 如果指定了渠道名称，根据名称自动校准渠道类型
+    if (urlParamChannelName && uploadConfig) {
+        const channelMappings = [
+            { type: 'CloudflareR2', channels: uploadConfig.cfr2?.channels },
+            { type: 'S3', channels: uploadConfig.s3?.channels },
+            { type: 'TelegramNew', channels: uploadConfig.telegram?.channels },
+            { type: 'Discord', channels: uploadConfig.discord?.channels },
+            { type: 'HuggingFace', channels: uploadConfig.huggingface?.channels },
+            { type: 'WebDAV', channels: uploadConfig.webdav?.channels }
+        ];
+        for (const item of channelMappings) {
+            if (item.channels && item.channels.some(ch => ch.name === urlParamChannelName)) {
+                uploadChannel = item.type;
+                break;
+            }
+        }
+    }
+
     // 获取文件信息
     const time = new Date().getTime();
     const file = formdata.get('file');
